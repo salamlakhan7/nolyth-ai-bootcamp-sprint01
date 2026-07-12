@@ -19,10 +19,11 @@ class UserLogin(BaseModel):
 
 
 class UserOut(BaseModel):
-    """Schema for returning user data - never includes password/hash."""
     id: int
     username: str
     email: EmailStr
+
+    model_config = {"from_attributes": True}   # pydantic v2 - allows reading from ORM object
 
 
 class Token(BaseModel):
