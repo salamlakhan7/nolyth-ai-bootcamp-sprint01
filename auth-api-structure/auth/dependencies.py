@@ -1,22 +1,15 @@
-# auth/dependencies.py
-# Reusable dependency to protect routes - extracts and validates the current user from a JWT
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
 
 from auth.security import decode_access_token, is_token_blacklisted
 from auth.service import get_user_by_username
+from database import get_db
 
-# tells FastAPI/Swagger where the login endpoint lives, powers the "Authorize" button in /docs
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
-    """
-    Dependency used on protected routes.
-    Validates the JWT, checks blacklist, and returns the current user record.
-    Raises 401 if anything is invalid.
-    """
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials.",
@@ -37,7 +30,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
     if username is None:
         raise credentials_exception
 
-    user = get_user_by_username(username)
+    user = get_user_by_username(db, username)
     if user is None:
         raise credentials_exception
 
