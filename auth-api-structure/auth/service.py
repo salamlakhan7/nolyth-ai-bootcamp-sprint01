@@ -1,49 +1,36 @@
 # auth/service.py
-# Business logic layer: user registration and authentication
-# (in-memory storage for now - persistent DB arrives Days 11-12)
+# Business logic layer - now backed by SQLite via SQLAlchemy
+
+from sqlalchemy.orm import Session
 
 from auth.security import hash_password, verify_password
 from auth.schemas import UserRegister
-
-# ----- In-memory "database" -----
-users_db: dict[str, dict] = {}   # keyed by username
-user_id_counter = 0
+from auth.models import User
 
 
-def get_user_by_username(username: str) -> dict | None:
-    """Fetch a stored user record by username."""
-    return users_db.get(username)
+def get_user_by_username(db: Session, username: str) -> User | None:
+    return db.query(User).filter(User.username == username).first()
 
 
-def register_user(user_data: UserRegister) -> dict:
-    """
-    Register a new user: checks for duplicates, hashes password, stores record.
-    Raises ValueError if username already exists (handled as HTTP error in router).
-    """
-    global user_id_counter
-
-    if get_user_by_username(user_data.username):
+def register_user(db: Session, user_data: UserRegister) -> User:
+    if get_user_by_username(db, user_data.username):
         raise ValueError("Username already registered.")
 
-    user_id_counter += 1
-    new_user = {
-        "id": user_id_counter,
-        "username": user_data.username,
-        "email": user_data.email,
-        "hashed_password": hash_password(user_data.password),
-    }
-    users_db[user_data.username] = new_user
+    new_user = User(
+        username=user_data.username,
+        email=user_data.email,
+        hashed_password=hash_password(user_data.password),
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
     return new_user
 
 
-def authenticate_user(username: str, password: str) -> dict | None:
-    """
-    Verify username/password combination.
-    Returns the user record if valid, None if invalid.
-    """
-    user = get_user_by_username(username)
+def authenticate_user(db: Session, username: str, password: str) -> User | None:
+    user = get_user_by_username(db, username)
     if not user:
         return None
-    if not verify_password(password, user["hashed_password"]):
+    if not verify_password(password, user.hashed_password):
         return None
     return user
