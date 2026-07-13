@@ -21,3 +21,5 @@ app.include_router(tasks_router)
 @app.get("/", tags=["Health"])
 def health_check():
     return {"status": "ok", "service": "Personal Task Tracker - Auth Edition"}
+
+# uvicorn main:app --host 0.0.0.0 --port $PORT

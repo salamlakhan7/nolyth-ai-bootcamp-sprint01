@@ -8,7 +8,9 @@ from passlib.context import CryptContext
 # ----- Config -----
 # In a real production app, SECRET_KEY comes from an environment variable (.env),
 # never hardcoded. Kept as a constant here since this is a training sprint project.
-SECRET_KEY = "sprint01-dev-secret-key-change-in-production"
+import os
+
+SECRET_KEY = os.getenv("SECRET_KEY", "sprint01-dev-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
