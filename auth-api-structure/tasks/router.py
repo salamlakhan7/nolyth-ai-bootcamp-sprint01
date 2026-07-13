@@ -31,3 +31,24 @@ def get_task(task_id: int, current_user=Depends(get_current_user), db: Session =
     if not task:
         raise HTTPException(status_code=404, detail="Task not found.")
     return task
+
+@router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_task(task_id: int, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Delete a task - only if it belongs to the logged-in user."""
+    task = get_single_task_for_user(db, task_id, current_user.username)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found.")
+    db.delete(task)
+    db.commit()
+
+
+@router.patch("/{task_id}", response_model=TaskOut)
+def mark_task_done(task_id: int, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Toggle a task's is_done status - only if it belongs to the logged-in user."""
+    task = get_single_task_for_user(db, task_id, current_user.username)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found.")
+    task.is_done = not task.is_done
+    db.commit()
+    db.refresh(task)
+    return task
